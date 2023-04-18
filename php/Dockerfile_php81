@@ -1,0 +1,111 @@
+# ----------------------------------------------------------------------------------------------------------------------
+# Ferramentas microsoft para uso do SQL Server
+# ----------------------------------------------------------------------------------------------------------------------
+# FROM mcr.microsoft.com/mssql-tools as mssql
+
+# ----------------------------------------------------------------------------------------------------------------------
+# PHP
+# ----------------------------------------------------------------------------------------------------------------------
+FROM php:8.1-fpm-alpine
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Diretório padrão da aplicação
+# ----------------------------------------------------------------------------------------------------------------------
+WORKDIR "/app"
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Extensões
+# ----------------------------------------------------------------------------------------------------------------------
+RUN docker-php-ext-install mysqli pdo pdo_mysql bcmath
+RUN apk add --update --no-cache zip libzip-dev openssl
+RUN docker-php-ext-install zip
+RUN apk add --update --no-cache autoconf gcc g++
+
+#ATIVAR caso utilizar HORIZON ou controlar POSIX
+RUN docker-php-ext-configure pcntl --enable-pcntl \
+  && docker-php-ext-install \
+    pcntl
+
+#GD
+RUN apk add --no-cache libpng libpng-dev libjpeg-turbo-dev libwebp-dev zlib-dev libxpm-dev \
+    && docker-php-ext-install gd && apk del libpng-dev
+RUN apk add --update --no-cache libpng-dev; \
+    apk add --update --no-cache freetype-dev libjpeg-turbo-dev jpeg-dev libpng-dev; \
+    docker-php-ext-install gd && docker-php-ext-configure gd --with-freetype --with-jpeg
+
+#REDIS
+RUN pecl install redis && docker-php-ext-enable redis
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Install language pack
+# ----------------------------------------------------------------------------------------------------------------------
+# ENV MUSL_LOCALE_DEPS cmake make musl-dev gcc gettext-dev libintl
+# ENV MUSL_LOCPATH /usr/share/i18n/locales/musl
+# RUN apk add --update --no-cache \
+#     $MUSL_LOCALE_DEPS \
+#     && wget https://gitlab.com/rilian-la-te/musl-locales/-/archive/master/musl-locales-master.zip \
+#     && unzip musl-locales-master.zip \
+#     && cd musl-locales-master \
+#     && cmake -DLOCALE_PROFILE=OFF -D CMAKE_INSTALL_PREFIX:PATH=/usr . && make && make install \
+#     && cd .. && rm -r musl-locales-master
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Conector SQL Server para PHP
+# ----------------------------------------------------------------------------------------------------------------------
+# COPY --from=mssql /opt/microsoft/ /opt/microsoft/
+# COPY --from=mssql /opt/mssql-tools/ /opt/mssql-tools/
+# COPY --from=mssql /usr/lib/libmsodbcsql-13.so /usr/lib/libmsodbcsql-13.so
+
+# RUN curl -O https://download.microsoft.com/download/8/6/8/868e5fc4-7bfe-494d-8f9d-115cbcdb52ae/msodbcsql18_18.1.2.1-1_amd64.apk \
+#     && curl -O https://download.microsoft.com/download/8/6/8/868e5fc4-7bfe-494d-8f9d-115cbcdb52ae/mssql-tools18_18.1.1.1-1_amd64.apk \
+#     && apk add --allow-untrusted msodbcsql18_18.1.2.1-1_amd64.apk \
+#     && apk add --allow-untrusted mssql-tools18_18.1.1.1-1_amd64.apk
+
+# RUN set -xe \
+#     && apk add --no-cache --virtual .persistent-deps freetds unixodbc \
+#     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS unixodbc-dev freetds-dev \
+#     && docker-php-source extract \
+#     && docker-php-ext-install pdo_dblib \
+#     && pecl install sqlsrv pdo_sqlsrv \
+#     && docker-php-ext-enable --ini-name 30-sqlsrv.ini sqlsrv \
+#     && docker-php-ext-enable --ini-name 35-pdo_sqlsrv.ini pdo_sqlsrv \
+#     && docker-php-source delete \
+#     && apk del .build-deps
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Set memory_limit
+# ----------------------------------------------------------------------------------------------------------------------
+RUN cd /usr/local/etc/php/conf.d/ && echo 'memory_limit = -1' >> /usr/local/etc/php/conf.d/docker-php-memlimit.ini
+
+# ----------------------------------------------------------------------------------------------------------------------
+# xdebug
+# ----------------------------------------------------------------------------------------------------------------------
+RUN apk add --update linux-headers
+RUN apk add --no-cache $PHPIZE_DEPS \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.idekey=DOCKER_ABC" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.client_host=host.docker.internal" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.discover_client_host=0" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
+# ----------------------------------------------------------------------------------------------------------------------
+# composer
+# ----------------------------------------------------------------------------------------------------------------------
+RUN php -r "readfile('http://getcomposer.org/installer');" | php -- --install-dir=/usr/bin/ --filename=composer \
+    && apk update && apk upgrade && apk add --update --no-cache bash && alias composer='php /usr/bin/composer'
+
+# ----------------------------------------------------------------------------------------------------------------------
+# node
+# ----------------------------------------------------------------------------------------------------------------------
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x \
+    && apk update \
+    && apk upgrade \
+    && apk add nodejs \
+    && apk add npm
+
+# ----------------------------------------------------------------------------------------------------------------------
+# git
+# ----------------------------------------------------------------------------------------------------------------------
+RUN apk add git
