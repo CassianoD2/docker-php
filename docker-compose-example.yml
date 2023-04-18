@@ -48,7 +48,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
       # Adicione aqui abaixo no caso de usar mais de um projeto o dns local e coloque o IP do container do webserver: 172.10.0.101
-      #- "financiamento.local:172.10.0.101"
+      #- "projeto.local:172.10.0.101"
 
   db:
     image: mysql:8.0

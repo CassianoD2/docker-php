@@ -9,7 +9,7 @@ Clone este repositório no mesmo diretório onde estão seus projetos.
 Exemplo:
 
 ```
-|-- projeto
+|-- raiz
     |-- docker-env
     |-- projeto
     |-- projeto1
@@ -19,7 +19,7 @@ Exemplo:
 
 1 - Para cada um deles devemos criar um arquivo de configuração do nginx. Exemplo:
 
-Arquivo: `projeto/docker-env/nginx/projeto.conf`
+Arquivo: `raiz/docker-env/nginx/projeto.conf`
 
 ```
 server {
@@ -135,7 +135,7 @@ docker-compose down
 Em breve.
 
 #### Configuração para vscode
-A chave `pathMappings` deve conter o caminho para o projeto dentro do container Docker. No arquivo abaixo o exemplo é `"/app/projeto"` mas no projeto de produtos seria `"/app/projeto1"`.
+A chave `pathMappings` deve conter o caminho para o projeto dentro do container Docker. No arquivo abaixo o exemplo é `"/app/projeto"` mas no projeto1 seria `"/app/projeto1"`.
 
 `.vscode/launch.json`
 
